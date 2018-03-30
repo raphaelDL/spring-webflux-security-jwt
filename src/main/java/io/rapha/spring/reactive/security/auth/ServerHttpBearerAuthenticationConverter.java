@@ -19,24 +19,16 @@
  */
 package io.rapha.spring.reactive.security.auth;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.SignedJWT;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import io.rapha.spring.reactive.security.auth.jwt.JWTAuthorizationPayload;
+import io.rapha.spring.reactive.security.auth.jwt.UsernamePasswordAuthenticationFromJWTToken;
+import io.rapha.spring.reactive.security.auth.jwt.VerifySignedJWT;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.text.ParseException;
-import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 /**
  * This converter extracts a bearer token from a WebExchange and
@@ -45,7 +37,9 @@ import java.util.stream.Stream;
  */
 public class ServerHttpBearerAuthenticationConverter implements Function<ServerWebExchange, Mono<Authentication>> {
 
-    public static final String BEARER = "Bearer ";
+    private static final String BEARER = "Bearer ";
+    private static final Predicate<String> matchBearerLength = authValue -> authValue.length() > BEARER.length();
+    private static final Function<String,String> isolateBearerValue = authValue -> authValue.substring(BEARER.length(), authValue.length());
 
     /**
      * Apply this function to the current WebExchange, an Authentication object
@@ -56,43 +50,14 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
      */
     @Override
     public Mono<Authentication> apply(ServerWebExchange serverWebExchange) {
-        //TODO rewrite this nasty implementation
-        ServerHttpRequest request = serverWebExchange.getRequest();
-        String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        String credentials;
-        SignedJWT signedJWT;
-        JWSVerifier verifier;
-        String subject;
-        String auths;
-        Collection<? extends GrantedAuthority> authorities;
-
-        if (authorization == null) {
-            return Mono.empty();
-        }
-
-        credentials = authorization.length() <= BEARER.length() ?
-                "" : authorization.substring(BEARER.length(), authorization.length());
-
-        try {
-            signedJWT = SignedJWT.parse(credentials);
-            verifier = new MACVerifier(JWTSecrets.DEFAULT_SECRET);
-            signedJWT.verify(verifier);
-        } catch (ParseException e) {
-            return Mono.empty();
-        } catch (JOSEException e) {
-            return Mono.empty();
-        }
-
-        try {
-            subject = signedJWT.getJWTClaimsSet().getSubject();
-            auths = (String) signedJWT.getJWTClaimsSet().getClaim("auths");
-        } catch (ParseException e) {
-            return Mono.empty();
-        }
-        authorities = Stream.of(auths.split(","))
-                .map(a -> new SimpleGrantedAuthority(a))
-                .collect(Collectors.toList());
-
-        return Mono.just(new UsernamePasswordAuthenticationToken(subject, null, authorities));
+        return Mono.justOrEmpty(serverWebExchange)
+                .map(JWTAuthorizationPayload::extract)
+                .filter(Objects::nonNull)
+                .filter(matchBearerLength)
+                .map(isolateBearerValue)
+                .filter(token -> !token.isEmpty())
+                .map(VerifySignedJWT::check)
+                .map(UsernamePasswordAuthenticationFromJWTToken::create)
+                .filter(Objects::nonNull);
     }
 }
