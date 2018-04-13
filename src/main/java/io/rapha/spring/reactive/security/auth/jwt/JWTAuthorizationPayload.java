@@ -21,13 +21,23 @@ package io.rapha.spring.reactive.security.auth.jwt;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 public class JWTAuthorizationPayload {
 
+    /**
+     * Returns the Authorization header's value or an empty string if it is absent.
+     *
+     * @param serverWebExchange
+     * @return
+     */
     public static String extract(ServerWebExchange serverWebExchange) {
-        return serverWebExchange.getRequest()
+        String header = serverWebExchange
+                .getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
+
+        return header != null
+                ? header
+                : "";
     }
 }

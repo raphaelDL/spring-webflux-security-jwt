@@ -52,7 +52,6 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
     public Mono<Authentication> apply(ServerWebExchange serverWebExchange) {
         return Mono.justOrEmpty(serverWebExchange)
                 .map(JWTAuthorizationPayload::extract)
-                .filter(Objects::nonNull)
                 .filter(matchBearerLength)
                 .map(isolateBearerValue)
                 .filter(token -> !token.isEmpty())
