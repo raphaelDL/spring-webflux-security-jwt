@@ -64,7 +64,6 @@ public class WebFilterChainServerJWTAuthenticationSuccessHandler implements Serv
      */
     @Override
     public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
-        System.out.println("SUCCESFUL AUTHENTICATION, generating token.");
         ServerWebExchange exchange = webFilterExchange.getExchange();
         exchange.getResponse()
                 .getHeaders()
