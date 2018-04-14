@@ -19,16 +19,21 @@
  */
 package io.rapha.spring.reactive.security.auth;
 
-import io.rapha.spring.reactive.security.auth.jwt.JWTAuthorizationPayload;
-import io.rapha.spring.reactive.security.auth.jwt.UsernamePasswordAuthenticationFromJWTToken;
-import io.rapha.spring.reactive.security.auth.jwt.VerifySignedJWT;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * This converter extracts a bearer token from a WebExchange and
@@ -38,8 +43,13 @@ import java.util.function.Predicate;
 public class ServerHttpBearerAuthenticationConverter implements Function<ServerWebExchange, Mono<Authentication>> {
 
     private static final String BEARER = "Bearer ";
-    private static final Predicate<String> matchBearerLength = authValue -> authValue.length() > BEARER.length();
-    private static final Function<String,String> isolateBearerValue = authValue -> authValue.substring(BEARER.length(), authValue.length());
+
+    private String secret;
+
+    @Autowired
+    public ServerHttpBearerAuthenticationConverter(String secret) {
+        this.secret = secret;
+    }
 
     /**
      * Apply this function to the current WebExchange, an Authentication object
@@ -50,13 +60,40 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
      */
     @Override
     public Mono<Authentication> apply(ServerWebExchange serverWebExchange) {
-        return Mono.justOrEmpty(serverWebExchange)
-                .map(JWTAuthorizationPayload::extract)
-                .filter(matchBearerLength)
-                .map(isolateBearerValue)
-                .filter(token -> !token.isEmpty())
-                .map(VerifySignedJWT::check)
-                .map(UsernamePasswordAuthenticationFromJWTToken::create)
-                .filter(Objects::nonNull);
+        Mono<Authentication> result = Mono.empty();
+        String jwtPayload = extractJwtPayload(serverWebExchange);
+        if (jwtPayload.length() > BEARER.length()) {
+            String token = jwtPayload.substring(BEARER.length(), jwtPayload.length());
+            try {
+                String subject = getJwtVerifier().verify(token).getSubject();
+                result = Mono.just(new UsernamePasswordAuthenticationToken(subject, null, new ArrayList<>()));
+            } catch (JWTVerificationException e) {
+                result = Mono.empty();
+            }
+        }
+        return result;
+    }
+
+    private String extractJwtPayload(ServerWebExchange exchange) {
+        String header = exchange
+                .getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        return header != null
+                ? header
+                : "";
+    }
+
+    public JWTVerifier getJwtVerifier() {
+        JWTVerifier verifier = null;
+
+        try {
+            verifier = JWT.require(Algorithm.HMAC512(secret)).build();
+        } catch (UnsupportedEncodingException ignored) {
+            // never happens
+        }
+
+        return verifier;
     }
 }

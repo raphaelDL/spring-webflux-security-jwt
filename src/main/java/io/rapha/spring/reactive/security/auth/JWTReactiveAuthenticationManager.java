@@ -40,6 +40,7 @@ public class JWTReactiveAuthenticationManager implements ReactiveAuthenticationM
      */
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
+        System.out.println("JwtAuthManager called");
         return Mono.just(authentication);
     }
 }

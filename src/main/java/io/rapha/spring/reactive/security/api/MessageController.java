@@ -24,7 +24,6 @@ import io.rapha.spring.reactive.security.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -38,8 +37,13 @@ import reactor.core.publisher.Flux;
 @RestController
 public class MessageController {
 
+    private final MessageService messageService;
+
     @Autowired
-    MessageService messageService;
+    public MessageController(MessageService messageService) {
+        this.messageService = messageService;
+    }
+
 
     /**
      * Root endpoint serves as a resource for Basic Authentication

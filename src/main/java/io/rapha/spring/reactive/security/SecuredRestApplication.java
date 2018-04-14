@@ -19,11 +19,14 @@
  */
 package io.rapha.spring.reactive.security;
 
-import io.rapha.spring.reactive.security.auth.JWTAuthorizationWebFilter;
+import io.rapha.spring.reactive.security.auth.JWTReactiveAuthenticationManager;
+import io.rapha.spring.reactive.security.auth.ServerHttpBearerAuthenticationConverter;
 import io.rapha.spring.reactive.security.auth.WebFilterChainServerJWTAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -33,6 +36,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 
 /**
  * A Spring RESTful Application showing authentication and authorization
@@ -42,6 +47,15 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 @SpringBootApplication
 @EnableWebFluxSecurity
 public class SecuredRestApplication {
+
+    @Value("${DEFAULT_SECRET}")
+    private String secret;
+
+    @Value("${jwt.expiration_time}")
+    private long expirationTime;
+
+    @Value("${ISSUER}")
+    private String issuer;
 
     /**
      * Main entry point, built on top of Spring Boot it will point the begin of
@@ -82,23 +96,44 @@ public class SecuredRestApplication {
      */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        AuthenticationWebFilter authenticationJWT;
+        AuthenticationWebFilter authenticationJWT =
+                new AuthenticationWebFilter(new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsRepository()));
+        authenticationJWT.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/login"));
+        authenticationJWT.setAuthenticationSuccessHandler(serverAuthenticationSuccessHandler());
 
-        authenticationJWT = new AuthenticationWebFilter(new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsRepository()));
-        authenticationJWT.setAuthenticationSuccessHandler(new WebFilterChainServerJWTAuthenticationSuccessHandler());
-
-        http
-                .authorizeExchange()
-                .pathMatchers("/login", "/")
-                .permitAll()
-                .and()
+        return http
                 .addFilterAt(authenticationJWT, SecurityWebFiltersOrder.FIRST)
+                .addFilterAt(authenticationWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
                 .authorizeExchange()
-                .pathMatchers("/api/**")
-                .authenticated()
+                    .pathMatchers("/login")
+                        .authenticated()
                 .and()
-                .addFilterAt(new JWTAuthorizationWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC);
+                    .authorizeExchange()
+                        .pathMatchers("/api/**")
+                            .authenticated()
+                .and()
+                    .authorizeExchange()
+                        .anyExchange()
+                            .denyAll()
+                .and()
+                .build();
+    }
 
-        return http.build();
+    @Bean
+    public AuthenticationWebFilter authenticationWebFilter() {
+        AuthenticationWebFilter webFilter = new AuthenticationWebFilter(reactiveAuthenticationManager());
+        webFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/api/**"));
+        webFilter.setAuthenticationConverter(new ServerHttpBearerAuthenticationConverter(secret));
+        return webFilter;
+    }
+
+    @Bean
+    public ReactiveAuthenticationManager reactiveAuthenticationManager() {
+        return new JWTReactiveAuthenticationManager();
+    }
+
+    @Bean
+    public ServerAuthenticationSuccessHandler serverAuthenticationSuccessHandler() {
+        return new WebFilterChainServerJWTAuthenticationSuccessHandler(secret, expirationTime, issuer);
     }
 }
