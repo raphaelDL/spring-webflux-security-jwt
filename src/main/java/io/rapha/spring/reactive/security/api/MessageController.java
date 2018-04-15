@@ -24,6 +24,7 @@ import io.rapha.spring.reactive.security.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -60,7 +61,7 @@ public class MessageController {
      *
      * @return A publisher serving a message stating successful log in
      */
-    @GetMapping("/login")
+    @PostMapping("/login")
     public Flux<FormattedMessage> login() {
         return messageService.getDefaultMessage();
     }
