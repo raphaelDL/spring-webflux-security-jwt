@@ -101,7 +101,7 @@ public class SecuredRestApplication {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
-                .addFilterAt(basicToJwtAuthenticationFilter(), SecurityWebFiltersOrder.FIRST)
+                .addFilterAt(basicToJwtAuthenticationFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
                 .addFilterAt(jwtAuthenticationFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
                 .authorizeExchange()
                     .pathMatchers(HttpMethod.POST, LOGIN_ROUTE)
@@ -113,6 +113,7 @@ public class SecuredRestApplication {
                         .anyExchange()
                             .denyAll()
                 .and()
+                    .csrf().disable()
                 .build();
     }
 
