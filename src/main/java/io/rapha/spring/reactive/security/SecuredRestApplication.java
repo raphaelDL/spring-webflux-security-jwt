@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -103,7 +104,9 @@ public class SecuredRestApplication {
                 .addFilterAt(basicToJwtAuthenticationFilter(), SecurityWebFiltersOrder.FIRST)
                 .addFilterAt(jwtAuthenticationFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
                 .authorizeExchange()
-                    .pathMatchers(LOGIN_ROUTE, API_ROUTE)
+                    .pathMatchers(HttpMethod.POST, LOGIN_ROUTE)
+                        .authenticated()
+                    .pathMatchers(API_ROUTE)
                         .authenticated()
                 .and()
                     .authorizeExchange()
@@ -123,7 +126,7 @@ public class SecuredRestApplication {
     public AuthenticationWebFilter basicToJwtAuthenticationFilter() {
         AuthenticationWebFilter webFilter =
                 new AuthenticationWebFilter(new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsRepository()));
-        webFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers(LOGIN_ROUTE));
+        webFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, LOGIN_ROUTE));
         webFilter.setAuthenticationSuccessHandler(new WebFilterChainServerJWTAuthenticationSuccessHandler(secret, expirationTime, issuer));
         return webFilter;
     }
