@@ -19,11 +19,14 @@
  */
 package io.rapha.spring.reactive.security;
 
-import io.rapha.spring.reactive.security.auth.JWTAuthorizationWebFilter;
+import io.rapha.spring.reactive.security.auth.JWTReactiveAuthenticationManager;
+import io.rapha.spring.reactive.security.auth.ServerHttpBearerAuthenticationConverter;
 import io.rapha.spring.reactive.security.auth.WebFilterChainServerJWTAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -33,6 +36,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 
 /**
  * A Spring RESTful Application showing authentication and authorization
@@ -42,6 +46,18 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 @SpringBootApplication
 @EnableWebFluxSecurity
 public class SecuredRestApplication {
+
+    private static final String LOGIN_ROUTE = "/login";
+    private static final String API_ROUTE = "/api/**";
+
+    @Value("${DEFAULT_SECRET}")
+    private String secret;
+
+    @Value("${jwt.expiration_time}")
+    private long expirationTime;
+
+    @Value("${ISSUER}")
+    private String issuer;
 
     /**
      * Main entry point, built on top of Spring Boot it will point the begin of
@@ -74,6 +90,8 @@ public class SecuredRestApplication {
     /**
      * For Spring Security webflux, a chain of filters will provide user authentication
      * and authorization, we add custom filters to enable JWT token approach.
+     * This chain will authenticate with Basic HTTP authentication on the LOGIN_ROUTE path and
+     * authenticate with Bearer token authentication on the API_ROUTE path.
      *
      * @param http An initial object to build common filter scenarios.
      *             Customized filters are added here.
@@ -82,23 +100,49 @@ public class SecuredRestApplication {
      */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        AuthenticationWebFilter authenticationJWT;
-
-        authenticationJWT = new AuthenticationWebFilter(new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsRepository()));
-        authenticationJWT.setAuthenticationSuccessHandler(new WebFilterChainServerJWTAuthenticationSuccessHandler());
-
-        http
+        return http
+                .addFilterAt(basicToJwtAuthenticationFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
+                .addFilterAt(jwtAuthenticationFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
                 .authorizeExchange()
-                .pathMatchers("/login", "/")
-                .permitAll()
+                    .pathMatchers(HttpMethod.POST, LOGIN_ROUTE)
+                        .authenticated()
+                    .pathMatchers(API_ROUTE)
+                        .authenticated()
                 .and()
-                .addFilterAt(authenticationJWT, SecurityWebFiltersOrder.FIRST)
-                .authorizeExchange()
-                .pathMatchers("/api/**")
-                .authenticated()
+                    .authorizeExchange()
+                        .anyExchange()
+                            .denyAll()
                 .and()
-                .addFilterAt(new JWTAuthorizationWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC);
+                    .csrf().disable()
+                .build();
+    }
 
-        return http.build();
+    /**
+     * An {@link AuthenticationWebFilter} which authenticates the user with Http Basic authentication
+     * and issues a token afterwards.
+     *
+     * @return
+     */
+    @Bean
+    public AuthenticationWebFilter basicToJwtAuthenticationFilter() {
+        AuthenticationWebFilter webFilter =
+                new AuthenticationWebFilter(new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsRepository()));
+        webFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, LOGIN_ROUTE));
+        webFilter.setAuthenticationSuccessHandler(new WebFilterChainServerJWTAuthenticationSuccessHandler(secret, expirationTime, issuer));
+        return webFilter;
+    }
+
+    /**
+     * An {@link AuthenticationWebFilter} which validates the user's Authorization token
+     * and gives access if the validation was successful.
+     *
+     * @return
+     */
+    @Bean
+    public AuthenticationWebFilter jwtAuthenticationFilter() {
+        AuthenticationWebFilter webFilter = new AuthenticationWebFilter(new JWTReactiveAuthenticationManager());
+        webFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers(API_ROUTE));
+        webFilter.setAuthenticationConverter(new ServerHttpBearerAuthenticationConverter(secret));
+        return webFilter;
     }
 }

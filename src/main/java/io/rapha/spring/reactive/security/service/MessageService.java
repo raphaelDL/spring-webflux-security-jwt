@@ -21,9 +21,10 @@ package io.rapha.spring.reactive.security.service;
 
 import io.rapha.spring.reactive.security.domain.FormattedMessage;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-@Component
+@Service
 public class MessageService {
 
     public Flux<FormattedMessage> getDefaultMessage(){
