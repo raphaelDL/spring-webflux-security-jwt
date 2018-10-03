@@ -22,6 +22,7 @@ package io.rapha.spring.reactive.security.auth;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.crypto.MACSigner;
+import io.rapha.spring.reactive.security.auth.jwt.JWTSecrets;
 
 public class JWTSignerProvider {
     private JWSSigner signer;

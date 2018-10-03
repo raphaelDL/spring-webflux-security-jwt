@@ -17,29 +17,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.rapha.spring.reactive.security.auth;
+package io.rapha.spring.reactive.security.auth.jwt;
 
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.core.Authentication;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.SignedJWT;
 import reactor.core.publisher.Mono;
+import java.text.ParseException;
 
-/**
- * An authentication manager intended to authenticate a JWT exchange
- * JWT tokens contain all information within the token itself
- * so an authentication manager is not necessary but we provide this
- * implementation to follow a standard.
- * Invalid tokens are filtered one previous step
- */
-public class JWTReactiveAuthenticationManager implements ReactiveAuthenticationManager {
+public class JWTUtil {
+    public static Mono<SignedJWT> check(String token) {
+        SignedJWT signedJWT;
+        JWSVerifier jwsVerifier;
+        boolean status;
 
-    /**
-     * Successfully authenticate an Authentication object
-     *
-     * @param authentication A valid authentication object
-     * @return authentication A valid authentication object
-     */
-    @Override
-    public Mono<Authentication> authenticate(Authentication authentication) {
-        return Mono.just(authentication);
+        try {
+            jwsVerifier = new MACVerifier(JWTSecrets.DEFAULT_SECRET);
+        } catch (JOSEException e) {
+            return Mono.empty();
+        }
+
+        try {
+            signedJWT = SignedJWT.parse(token);
+        } catch (ParseException e) {
+          return Mono.empty();
+        }
+
+        try {
+            status =   signedJWT.verify(jwsVerifier);
+        } catch (JOSEException e) {
+            return Mono.empty();
+        }
+
+        return status ? Mono.just(signedJWT) : Mono.empty();
     }
 }
