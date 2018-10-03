@@ -1,5 +1,4 @@
-**JWT Authentication and Authorization using Spring Security 5, Spring WebFlux and SpringBoot 2**
-
+# Authentication and Authorization using JWT with Spring WebFlux and Spring Security Reactive
 
 ### Nice Docs
 Before getting started I suggest you go through the next reference 
@@ -218,3 +217,23 @@ public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http)
     }
 ...
 ```
+
+
+### Create a REST Controller and configure access rules
+
+```java
+...
+ @GetMapping("/api/private")
+    @PreAuthorize("hasRole('USER')")
+    public Flux<FormattedMessage> privateMessage() {
+        return messageService.getCustomMessage("User");
+    }
+
+...
+```
+
+
+
+### That's all
+
+Hope you enjoy it.
