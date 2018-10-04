@@ -1,6 +1,7 @@
 # Authentication and Authorization using JWT with Spring WebFlux and Spring Security Reactive
 
-### Nice Docs
+### Nice Docs to REad First
+
 Before getting started I suggest you go through the next reference 
 
 [Spring Webflux](https://docs.spring.io/spring/docs/5.1.0.RELEASE/spring-framework-reference/web-reactive.html#spring-webflux)
@@ -38,7 +39,7 @@ initial roles is added:
     }
 ```
 
-In this example user information will bes tored in memory using a `Map` but it can be replaced by different strategies.
+In this example user information will be stored in memory using a `Map` but it can be replaced by different strategies.
 
 Before getting a Json Web Token an user should use another authentication mechanism, for example HTTP Basic Authentication and provided the right credentials a JWT will be issued which can be used to perform future API calls by changing the `Authetication` method from Basic to Bearer.
 
