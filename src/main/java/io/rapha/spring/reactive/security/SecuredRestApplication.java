@@ -45,7 +45,7 @@ import java.util.function.Function;
 
 /**
  * A Spring RESTful Application showing authentication and authorization
- *
+ * Signed Commit
  * @author rafa
  *
  **/
@@ -155,3 +155,4 @@ public class SecuredRestApplication {
     }
 
 }
+
