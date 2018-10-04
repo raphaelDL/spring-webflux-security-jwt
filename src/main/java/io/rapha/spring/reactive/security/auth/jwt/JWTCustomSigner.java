@@ -17,17 +17,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package io.rapha.spring.reactive.security.auth;
+package io.rapha.spring.reactive.security.auth.jwt;
 
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.crypto.MACSigner;
 import io.rapha.spring.reactive.security.auth.jwt.JWTSecrets;
 
-public class JWTSignerProvider {
+public class JWTCustomSigner {
     private JWSSigner signer;
 
-    public JWTSignerProvider() {
+    public JWTCustomSigner() {
         JWSSigner init;
         try {
             init = new MACSigner(JWTSecrets.DEFAULT_SECRET);
