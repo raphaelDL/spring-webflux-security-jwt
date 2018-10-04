@@ -1,6 +1,6 @@
 # Authentication and Authorization using JWT with Spring WebFlux and Spring Security Reactive
 
-### Nice Docs to REad First
+### Nice Docs to Read First
 
 Before getting started I suggest you go through the next reference 
 
