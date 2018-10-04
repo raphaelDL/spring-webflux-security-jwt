@@ -26,7 +26,14 @@ import com.nimbusds.jwt.SignedJWT;
 import reactor.core.publisher.Mono;
 import java.text.ParseException;
 
-public class JWTUtil {
+/**
+ *  Decides when a JWT string is valid.
+ *  First  try to parse it, then check that
+ *  the signature is correct.
+ *  If something fails an empty Mono is returning
+ *  meaning that is not valid
+ */
+public class JWTCustomVerifier {
     public static Mono<SignedJWT> check(String token) {
         SignedJWT signedJWT;
         JWSVerifier jwsVerifier;

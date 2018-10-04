@@ -24,6 +24,9 @@ import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.crypto.MACSigner;
 import io.rapha.spring.reactive.security.auth.jwt.JWTSecrets;
 
+/**
+ *  Creates a JWTSigner using a simple secret string
+ */
 public class JWTCustomSigner {
     private JWSSigner signer;
 

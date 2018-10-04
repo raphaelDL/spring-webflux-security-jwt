@@ -39,7 +39,6 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
@@ -109,7 +108,13 @@ public class SecuredRestApplication {
         return http.build();
     }
 
-
+    /**
+     * Use the already implemented logic in  AuthenticationWebFilter and set a custom
+     * SuccessHandler that will return a JWT when a user is authenticated with user/password
+     * Create an AuthenticationManager using the UserDetailsService defined above
+     *
+     * @return AuthenticationWebFilter
+     */
     private AuthenticationWebFilter basicAuthenticationFilter(){
         UserDetailsRepositoryReactiveAuthenticationManager authManager;
         AuthenticationWebFilter basicAuthenticationFilter;
@@ -125,8 +130,16 @@ public class SecuredRestApplication {
 
     }
 
-
-    private WebFilter bearerAuthenticationFilter(){
+    /**
+     * Use the already implemented logic by AuthenticationWebFilter and set a custom
+     * converter that will handle requests containing a Bearer token inside
+     * the HTTP Authorization header.
+     * Set a dummy authentication manager to this filter, it's not needed because
+     * the converter handles this.
+     *
+     * @return bearerAuthenticationFilter that will authorize requests containing a JWT
+     */
+    private AuthenticationWebFilter bearerAuthenticationFilter(){
         AuthenticationWebFilter bearerAuthenticationFilter;
         Function<ServerWebExchange, Mono<Authentication>> bearerConverter;
         ReactiveAuthenticationManager authManager;

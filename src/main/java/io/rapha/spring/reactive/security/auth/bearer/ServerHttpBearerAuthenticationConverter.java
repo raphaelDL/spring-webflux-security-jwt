@@ -21,7 +21,7 @@ package io.rapha.spring.reactive.security.auth.bearer;
 
 import io.rapha.spring.reactive.security.auth.jwt.AuthorizationHeaderPayload;
 import io.rapha.spring.reactive.security.auth.jwt.UsernamePasswordAuthenticationBearer;
-import io.rapha.spring.reactive.security.auth.jwt.JWTUtil;
+import io.rapha.spring.reactive.security.auth.jwt.JWTCustomVerifier;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -53,7 +53,7 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
                 .flatMap(AuthorizationHeaderPayload::extract)
                    .filter(matchBearerLength)
                 .flatMap(isolateBearerValue)
-                .flatMap(JWTUtil::check)
+                .flatMap(JWTCustomVerifier::check)
                 .flatMap(UsernamePasswordAuthenticationBearer::create);
     }
 }
