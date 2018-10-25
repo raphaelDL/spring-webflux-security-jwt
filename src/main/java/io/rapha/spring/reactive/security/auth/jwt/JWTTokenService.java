@@ -26,7 +26,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.core.GrantedAuthority;
 
-import java.time.ZonedDateTime;
+import java.time.Period;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -59,8 +59,8 @@ public class JWTTokenService {
                 .expirationTime(new Date(getExpiration()))
                 .claim("roles", authorities
                         .stream()
-                        .map(auth -> (GrantedAuthority) auth)
-                        .map(a -> a.getAuthority())
+                        .map(GrantedAuthority.class::cast)
+                        .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(",")))
                 .build();
 
@@ -75,7 +75,15 @@ public class JWTTokenService {
         return signedJWT.serialize();
     }
 
+    /**
+     * Returns a millisecond time representation 24hrs from now
+     * to be used as the time the currently token will be valid
+     *
+     * @return Time representation 24 from now
+     */
     private static long getExpiration(){
-        return ZonedDateTime.now().plusDays(1).toInstant().getEpochSecond();
+        return new Date().toInstant()
+                .plus(Period.ofDays(1))
+                .toEpochMilli();
     }
 }

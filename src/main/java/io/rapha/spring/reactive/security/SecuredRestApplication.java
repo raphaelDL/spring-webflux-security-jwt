@@ -153,6 +153,4 @@ public class SecuredRestApplication {
 
         return bearerAuthenticationFilter;
     }
-
 }
-

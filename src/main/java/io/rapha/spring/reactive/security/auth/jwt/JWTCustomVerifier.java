@@ -27,6 +27,8 @@ import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.util.Date;
+import java.util.function.Predicate;
 
 /**
  * Decides when a JWT string is valid.
@@ -37,40 +39,55 @@ import java.time.Instant;
  * Verify that expiration date is valid
  */
 public class JWTCustomVerifier {
-    public static Mono<SignedJWT> check(String token) {
-        SignedJWT signedJWT;
-        JWSVerifier jwsVerifier;
-        Instant expirationDate;
+    private JWSVerifier jwsVerifier;
 
-        boolean status;
-
-        try {
-            jwsVerifier = new MACVerifier(JWTSecrets.DEFAULT_SECRET);
-        } catch (JOSEException e) {
-            return Mono.empty();
-        }
-
-        try {
-            signedJWT = SignedJWT.parse(token);
-            expirationDate = signedJWT.getJWTClaimsSet()
-                    .getExpirationTime()
-                    .toInstant();
-
-        } catch (ParseException e) {
-            return Mono.empty();
-        }
-
-        try {
-            status = signedJWT.verify(jwsVerifier);
-
-        } catch (JOSEException e) {
-            return Mono.empty();
-        }
-
-        return status &&  isNotExpired(expirationDate) ? Mono.just(signedJWT) : Mono.empty();
+    public JWTCustomVerifier() {
+        this.jwsVerifier = this.buildJWSVerifier();
     }
 
-    private static boolean isNotExpired(Instant expirationDate) {
-        return expirationDate.isAfter(Instant.now());
+    public Mono<SignedJWT> check(String token) {
+        return Mono.justOrEmpty(createJWS(token))
+                .filter(isNotExpired)
+                .filter(validSignature);
+    }
+
+    private Predicate<SignedJWT> isNotExpired = token ->
+            getExpirationDate(token).after(Date.from(Instant.now()));
+
+    private Predicate<SignedJWT> validSignature = token -> {
+        try {
+            return token.verify(this.jwsVerifier);
+        } catch (JOSEException e) {
+            e.printStackTrace();
+            return false;
+        }
+    };
+
+    private MACVerifier buildJWSVerifier() {
+        try {
+            return new MACVerifier(JWTSecrets.DEFAULT_SECRET);
+        } catch (JOSEException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private SignedJWT createJWS(String token) {
+        try {
+            return SignedJWT.parse(token);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private Date getExpirationDate(SignedJWT token) {
+        try {
+            return token.getJWTClaimsSet()
+                    .getExpirationTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

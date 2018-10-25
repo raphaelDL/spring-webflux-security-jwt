@@ -40,6 +40,7 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
     private static final Predicate<String> matchBearerLength = authValue -> authValue.length() > BEARER.length();
     private static final Function<String,Mono<String>> isolateBearerValue = authValue -> Mono.justOrEmpty(authValue.substring(BEARER.length()));
 
+    private  JWTCustomVerifier jwtVerifier = new JWTCustomVerifier();
     /**
      * Apply this function to the current WebExchange, an Authentication object
      * is returned when completed.
@@ -53,7 +54,7 @@ public class ServerHttpBearerAuthenticationConverter implements Function<ServerW
                 .flatMap(AuthorizationHeaderPayload::extract)
                    .filter(matchBearerLength)
                 .flatMap(isolateBearerValue)
-                .flatMap(JWTCustomVerifier::check)
-                .flatMap(UsernamePasswordAuthenticationBearer::create);
+                .flatMap(jwtVerifier::check)
+                .flatMap(UsernamePasswordAuthenticationBearer::create).log();
     }
 }

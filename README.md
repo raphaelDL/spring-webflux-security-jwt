@@ -175,8 +175,8 @@ Create a converter `ServerHttpBearerAuthenticationConverter` that takes a reques
                 .flatMap(AuthorizationHeaderPayload::extract)
                    .filter(matchBearerLength)
                 .flatMap(isolateBearerValue)
-                .flatMap(JWTUtil::check)
-                .flatMap(UsernamePasswordAuthenticationBearer::create);
+                .flatMap(jwtVerifier::check)
+                .flatMap(UsernamePasswordAuthenticationBearer::create).log();
     }
 ...
 ```
@@ -258,7 +258,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1Ni.....
 Use that in another request:
 
 ```shell
-$ curl -v  -H "Authorization: Bearer eyJhbiJ9.eyJzdWIjTg5fQ.MXlaAaWCz0ff_o"  localhost:8080/api/admin
+$ curl -v  -H "Authorization: Bearer eyJhbGciOiJIUzI1Ni....."  localhost:8080/api/admin
 ```
 
 You should be able to consume the API
