@@ -234,6 +234,34 @@ public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http)
 ```
 
 
+### Run the Application
+
+```shell
+$ mvn spring-boot:run
+```
+
+### Test it
+
+Login using HTTP Basic
+
+```shell
+$ curl -v  -u user:user localhost:8080/login
+```
+
+Inspect the response contents and find the authorization header. 
+It should look like:
+
+```shell
+Authorization: Bearer eyJhbGciOiJIUzI1Ni.....
+```
+
+Use that in another request:
+
+```shell
+curl -v  -H "Authorization: Bearer eyJhbiJ9.eyJzdWIjTg5fQ.MXlaAaWCz0ff_o"  localhost:8080/api/admin
+```
+
+You should be able to consume the API
 
 ### That's all
 

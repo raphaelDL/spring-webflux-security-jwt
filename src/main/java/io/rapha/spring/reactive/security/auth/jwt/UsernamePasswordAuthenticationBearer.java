@@ -46,7 +46,7 @@ public class UsernamePasswordAuthenticationBearer {
 
         try {
             subject = signedJWT.getJWTClaimsSet().getSubject();
-            auths = (String) signedJWT.getJWTClaimsSet().getClaim("auths");
+            auths = (String) signedJWT.getJWTClaimsSet().getClaim("roles");
         } catch (ParseException e) {
             return Mono.empty();
         }

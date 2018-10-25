@@ -59,7 +59,7 @@ public class BasicAuthenticationSuccessHandler
     }
 
     private static String tokenFromAuthentication(Authentication authentication){
-        return new JWTTokenService().generateToken(
+        return JWTTokenService.generateToken(
                                             authentication.getName(),
                                             authentication.getCredentials(),
                                             authentication.getAuthorities());

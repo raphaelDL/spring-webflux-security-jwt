@@ -26,6 +26,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -46,19 +47,25 @@ public class JWTTokenService {
      * @param authorities A collection of granted authorities for this principal
      * @return String representing a valid token
      */
-    public String generateToken(String subject, Object credentials, Collection<? extends GrantedAuthority> authorities) {
+    public static String generateToken(String subject, Object credentials, Collection<? extends GrantedAuthority> authorities) {
+        SignedJWT signedJWT;
+        JWTClaimsSet claimsSet;
+
         //TODO refactor this nasty code
-// Prepare JWT with claims set
-        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+
+        claimsSet = new JWTClaimsSet.Builder()
                 .subject(subject)
                 .issuer("rapha.io")
-                .expirationTime(new Date(new Date().getTime() + 60 * 1000))
-                .claim("auths", authorities.parallelStream().map(auth -> (GrantedAuthority) auth).map(a -> a.getAuthority()).collect(Collectors.joining(",")))
+                .expirationTime(new Date(getExpiration()))
+                .claim("roles", authorities
+                        .stream()
+                        .map(auth -> (GrantedAuthority) auth)
+                        .map(a -> a.getAuthority())
+                        .collect(Collectors.joining(",")))
                 .build();
 
-        SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+        signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
 
-// Apply the HMAC protection
         try {
             signedJWT.sign(new JWTCustomSigner().getSigner());
         } catch (JOSEException e) {
@@ -66,5 +73,9 @@ public class JWTTokenService {
         }
 
         return signedJWT.serialize();
+    }
+
+    private static long getExpiration(){
+        return ZonedDateTime.now().plusDays(1).toInstant().getEpochSecond();
     }
 }

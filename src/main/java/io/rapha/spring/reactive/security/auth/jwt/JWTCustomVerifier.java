@@ -24,19 +24,24 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import reactor.core.publisher.Mono;
+
 import java.text.ParseException;
+import java.time.Instant;
 
 /**
- *  Decides when a JWT string is valid.
- *  First  try to parse it, then check that
- *  the signature is correct.
- *  If something fails an empty Mono is returning
- *  meaning that is not valid
+ * Decides when a JWT string is valid.
+ * First  try to parse it, then check that
+ * the signature is correct.
+ * If something fails an empty Mono is returning
+ * meaning that is not valid.
+ * Verify that expiration date is valid
  */
 public class JWTCustomVerifier {
     public static Mono<SignedJWT> check(String token) {
         SignedJWT signedJWT;
         JWSVerifier jwsVerifier;
+        Instant expirationDate;
+
         boolean status;
 
         try {
@@ -47,16 +52,25 @@ public class JWTCustomVerifier {
 
         try {
             signedJWT = SignedJWT.parse(token);
+            expirationDate = signedJWT.getJWTClaimsSet()
+                    .getExpirationTime()
+                    .toInstant();
+
         } catch (ParseException e) {
-          return Mono.empty();
+            return Mono.empty();
         }
 
         try {
-            status =   signedJWT.verify(jwsVerifier);
+            status = signedJWT.verify(jwsVerifier);
+
         } catch (JOSEException e) {
             return Mono.empty();
         }
 
-        return status ? Mono.just(signedJWT) : Mono.empty();
+        return status &&  isNotExpired(expirationDate) ? Mono.just(signedJWT) : Mono.empty();
+    }
+
+    private static boolean isNotExpired(Instant expirationDate) {
+        return expirationDate.isAfter(Instant.now());
     }
 }
