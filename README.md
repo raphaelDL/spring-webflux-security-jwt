@@ -1,3 +1,11 @@
+ > [!IMPORTANT]
+  > ## 🚀 This project has been modernized
+  > A maintained version — **Spring Boot 4 · Java 21 · Spring Security 7**, with a full test suite and a fix for a latent authorization bug — now lives here:
+  >
+  > ### 👉 [spring-webflux-security-jwt-2026](https://github.com/raphaelDL/spring-webflux-security-jwt-2026)
+  >
+  > This repository is kept for historical reference.
+
 # Authentication and Authorization using JWT with Spring WebFlux and Spring Security Reactive
 
 ### Nice Docs to Read First
